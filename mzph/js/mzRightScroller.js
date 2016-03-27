@@ -4,8 +4,8 @@ $(document).ready(function() {
 		y: 1000
 	};
 	GAME_SIZE = {
-		x: $(window).width() * 0.6,
-		y: $(window).height() * 0.6
+		x: 640,
+		y: 480
 	};
 	PLAYER_VELOCITY = {
 		x: 200,
@@ -20,15 +20,15 @@ $(document).ready(function() {
 
 	var PhaserGame = function() {
 		this.player = {};
-		this.platforms = {};
+		this.platformGroup = {};
+		this.littleYellowEnemyGroup = {};
 		this.sky = {};
 
-		this.player.facing = 'left';
 		this.edgeTimer = 0; //cuenta limite de tiempo para saltar despues de caer del eje
 		this.jumpTimer = 0;
 
+		this.player.facing = 'left';
 		this.player.wasStanding = false;
-		this.cursors = null;
 	};
 
 	PhaserGame.prototype.init = function() {
@@ -47,7 +47,7 @@ $(document).ready(function() {
 
 		mzph().setCrossOriginLoadAnonymous();
 
-		mzph().loadImage('trees', 'assets/treesBig.png');
+		mzph().loadImage('trees', 'assets/treesMedium.png');
 		mzph().loadImage('clouds', 'assets/cloudsBig.png');
 		mzph().loadImage('platform', 'assets/platform.png');
 		mzph().loadImage('ice-platform', 'assets/ice-platform.png');
@@ -56,35 +56,36 @@ $(document).ready(function() {
 	};
 
 	PhaserGame.prototype.createEnemies = function() {
-		this.littleYellowEnemies = mzph().addPhysicsGroup();
-		var enemyArray = [];
+		this.littleYellowEnemyGroup = mzph().addPhysicsGroup();
+		var littleYellowEnemies = [];
 
-		enemyArray.push(mzph(this.littleYellowEnemies).createInGroup(0, 200 - 50, 'littleYellowEnemy'));
-		enemyArray.push(mzph(this.littleYellowEnemies).createInGroup(300, 500 - 50, 'littleYellowEnemy'));
-		enemyArray.push(mzph(this.littleYellowEnemies).createInGroup(600, 400 - 50, 'littleYellowEnemy'));
-		enemyArray.push(mzph(this.littleYellowEnemies).createInGroup(700, 250 - 50, 'littleYellowEnemy'));
+		littleYellowEnemies.push(mzph(this.littleYellowEnemyGroup).createInGroup(0, 200 - 50, 'littleYellowEnemy'));
+		littleYellowEnemies.push(mzph(this.littleYellowEnemyGroup).createInGroup(300, 500 - 50, 'littleYellowEnemy'));
+		littleYellowEnemies.push(mzph(this.littleYellowEnemyGroup).createInGroup(600, 400 - 50, 'littleYellowEnemy'));
+		littleYellowEnemies.push(mzph(this.littleYellowEnemyGroup).createInGroup(700, 250 - 50, 'littleYellowEnemy'));
 
-		enemyArray.forEach(function(enemy) {
+		littleYellowEnemies.forEach(function(enemy) {
 			mzph(enemy).resizeBody(0.9);
 			mzph(enemy).addAnimation('idleRight', [5], 5, false);
 			mzph(enemy).addAnimation('idleLeft', [0], 5, false);
 			mzph(enemy).addAnimation('runLeft', [3, 4], 7, true);
 			mzph(enemy).addAnimation('runRight', [1, 2], 7, true);
+			// VER DE AGREGAR OBJETOS INVISIBLES EN LAS PLATAFORMAS QUE PUEDAN COLISIONAR CON LOS ENEMIGOS PERO NO CON  EL JUGADOR PARA QUE LOS ENEMIGOS CAMINEN DE UN LADO A OTRO
 		});
 	};
 
 	PhaserGame.prototype.createPlatforms = function() {
-		this.platforms = mzph().addPhysicsGroup();
+		this.platformGroup = mzph().addPhysicsGroup();
 		//CREAMOS LAS PLATAFORMAS DE PRUEBA
-		mzph(this.platforms).createInGroup(0, 200, 'platform');
-		mzph(this.platforms).createInGroup(300, 500, 'platform');
-		mzph(this.platforms).createInGroup(600, 400, 'platform');
-		mzph(this.platforms).createInGroup(700, 250, 'platform');
+		mzph(this.platformGroup).createInGroup(0, 200, 'platform');
+		mzph(this.platformGroup).createInGroup(300, 500, 'platform');
+		mzph(this.platformGroup).createInGroup(600, 400, 'platform');
+		mzph(this.platformGroup).createInGroup(700, 250, 'platform');
 		//FIN DE PLATAFORMAS DE PRUEBA
-		mzph(this.platforms).setAllowGravityToAll(false);
-		mzph(this.platforms).setImmovableToAll(true);
-		mzph(this.platforms).setAllowGravityToAll(false);
-		mzph(this.platforms).setImmovableToAll(true);
+		mzph(this.platformGroup).setAllowGravityToAll(false);
+		mzph(this.platformGroup).setImmovableToAll(true);
+		mzph(this.platformGroup).setAllowGravityToAll(false);
+		mzph(this.platformGroup).setImmovableToAll(true);
 	};
 
 	PhaserGame.prototype.createPlayer = function() {
@@ -105,9 +106,10 @@ $(document).ready(function() {
 
 	PhaserGame.prototype.createBackground = function() {
 		mzph().setStageBackgroundColor('#2f9acc');
-		this.sky = mzph().addTileSprite(0, 0, 640, 480, 'clouds');
+		this.sky = mzph().addTileSprite(0, 0, 800, 600, 'clouds');
 		mzph(this.sky).setFixedToCamera();
-		this.trees = mzph().addTileSprite(0, 200, 2000, 1000, 'trees');
+		this.trees = mzph().addTileSprite(0, 100, 800, 600, 'trees');
+		mzph(this.trees).setFixedToCamera();
 	};
 
 	PhaserGame.prototype.create = function() {
@@ -194,9 +196,9 @@ $(document).ready(function() {
 
 
 	PhaserGame.prototype.update = function() {
-		mzph().arcadeCollide(this.player, this.platforms);
+		mzph().arcadeCollide(this.player, this.platformGroup);
 
-		mzph().arcadeCollide(this.littleYellowEnemies, this.platforms);
+		mzph().arcadeCollide(this.littleYellowEnemyGroup, this.platformGroup);
 
 		this.movePlayer();
 	};
