@@ -1,18 +1,22 @@
 $(document).ready(function() {
-	worldSize = {
+	WORLD_SIZE = {
 		x: 2000,
 		y: 1000
 	};
-	gameSize = {
-		x: $(window).width() * 0.5,
-		y: $(window).height() * 0.5
+	GAME_SIZE = {
+		x: $(window).width() * 0.6,
+		y: $(window).height() * 0.6
 	};
-	playerVelocity = {
+	PLAYER_VELOCITY = {
 		x: 200,
 		y: 0
 	};
+	TILE_VELOCITY = {
+		x: 1,
+		y: 0
+	};
 
-	game = mzph().newGame(gameSize.x, gameSize.y, 'game');
+	game = mzph().newGame(GAME_SIZE.x, GAME_SIZE.y, 'game');
 
 	var PhaserGame = function() {
 		this.player = {};
@@ -31,7 +35,7 @@ $(document).ready(function() {
 		console.log("running init");
 
 		mzph().setRenderSessionRoundPixels();
-		mzph().resizeWorld(worldSize.x, worldSize.y);
+		mzph().resizeWorld(WORLD_SIZE.x, WORLD_SIZE.y);
 		mzph().startArcadePhysicsSystem();
 		mzph().setPhysicsArcadeGravityY(750);
 
@@ -48,74 +52,86 @@ $(document).ready(function() {
 		mzph().loadImage('platform', 'assets/platform.png');
 		mzph().loadImage('ice-platform', 'assets/ice-platform.png');
 		mzph().loadSpritesheet('dude', 'assets/zero_z1standardframes.gif', 44, 47);
-		console.log("shit");
+		mzph().loadSpritesheet('littleYellowEnemy', 'assets/littleYellow.png', 40, 24);
 	};
 
-	PhaserGame.prototype.create = function() {
-		console.log("running create");
+	PhaserGame.prototype.createEnemies = function() {
+		this.littleYellowEnemies = mzph().addPhysicsGroup();
+		var enemyArray = [];
 
-		mzph().setStageBackgroundColor('#2f9acc');
-		this.sky = mzph().addTileSprite(0, 0, 640, 480, 'clouds');
-		mzph(this.sky).setFixedToCamera();
-		this.trees = mzph().addTileSprite(0, 200, 2000, 1000, 'trees');
+		enemyArray.push(mzph(this.littleYellowEnemies).createInGroup(0, 200 - 50, 'littleYellowEnemy'));
+		enemyArray.push(mzph(this.littleYellowEnemies).createInGroup(300, 500 - 50, 'littleYellowEnemy'));
+		enemyArray.push(mzph(this.littleYellowEnemies).createInGroup(600, 400 - 50, 'littleYellowEnemy'));
+		enemyArray.push(mzph(this.littleYellowEnemies).createInGroup(700, 250 - 50, 'littleYellowEnemy'));
 
+		enemyArray.forEach(function(enemy) {
+			mzph(enemy).resizeBody(0.9);
+			mzph(enemy).addAnimation('idleRight', [5], 5, false);
+			mzph(enemy).addAnimation('idleLeft', [0], 5, false);
+			mzph(enemy).addAnimation('runLeft', [3, 4], 7, true);
+			mzph(enemy).addAnimation('runRight', [1, 2], 7, true);
+		});
+	};
 
+	PhaserGame.prototype.createPlatforms = function() {
 		this.platforms = mzph().addPhysicsGroup();
-
 		//CREAMOS LAS PLATAFORMAS DE PRUEBA
 		mzph(this.platforms).createInGroup(0, 200, 'platform');
 		mzph(this.platforms).createInGroup(300, 500, 'platform');
 		mzph(this.platforms).createInGroup(600, 400, 'platform');
 		mzph(this.platforms).createInGroup(700, 250, 'platform');
 		//FIN DE PLATAFORMAS DE PRUEBA
-
 		mzph(this.platforms).setAllowGravityToAll(false);
 		mzph(this.platforms).setImmovableToAll(true);
 		mzph(this.platforms).setAllowGravityToAll(false);
 		mzph(this.platforms).setImmovableToAll(true);
+	};
 
-
-
-		// this.player = this.add.sprite(320, 1952, 'dude');
+	PhaserGame.prototype.createPlayer = function() {
 		this.player = mzph().addSprite(0, 0, 'dude');
 		mzph(this.player).enableArcadePhysicsOn();
-		// this.player.body.collideWorldBounds = true;
 		mzph(this.player.body).setBodyCollideWorldBounds();
-		//mzph(this.player).setBodySize(20, 25, 5, 16);
-		mzph(this.player).setBodySize(39, 42);
-		mzph(this.player).addAnimation('idleRight', [0, 1, 2, 3, 4, 5, 6], 10, true);
-		mzph(this.player).addAnimation('idleLeft', [52, 53, 54, 55, 56, 57, 58], 10, true);
+		// mzph(this.player).setBodySize(39, 42);
+		mzph(this.player).resizeBody(0.8);
+		mzph(this.player).addAnimation('idleRight', [0, 1, 2, 3, 4, 5, 6], 5, true);
+		mzph(this.player).addAnimation('idleLeft', [58, 57, 56, 55, 54, 53, 52], 5, true);
 		mzph(this.player).addAnimation('runLeft', [77, 76, 75, 74, 73, 72, 71, 70, 69], 10, true);
 		mzph(this.player).addAnimation('runRight', [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], 10, true);
 		mzph(this.player).addAnimation('jumpLeft', [90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, 79], 5, false);
 		mzph(this.player).addAnimation('jumpRight', [26, 27, 28, 29, 30, 31, 32, 33, 34, 35], 5, false);
 
-
 		mzph(this.player).cameraFollow();
+	};
 
+	PhaserGame.prototype.createBackground = function() {
+		mzph().setStageBackgroundColor('#2f9acc');
+		this.sky = mzph().addTileSprite(0, 0, 640, 480, 'clouds');
+		mzph(this.sky).setFixedToCamera();
+		this.trees = mzph().addTileSprite(0, 200, 2000, 1000, 'trees');
+	};
 
-		this.cursors = mzph().createCursorKeys();
+	PhaserGame.prototype.create = function() {
+		console.log("running create");
+
+		this.createBackground();
+
+		this.createPlatforms();
+
+		this.createEnemies();
+
+		this.createPlayer();
+
+		mzph().createCursorKeys();
 	};
 
 
-	PhaserGame.prototype.setFriction = function(player, platform) {
-		if (platform.key === 'ice-platform') {
-			// player.body.x -= platform.body.x - platform.body.prev.x;
-			mzph(player).augmentBodyX(-(mzph(platform).getBodyX() - mzph(platform).getPrevBodyX()));
-		}
-	};
-
-
-	PhaserGame.prototype.update = function() {
-		mzph().arcadeCollide(this.player, this.platforms, this.setFriction, null, this);
-
+	PhaserGame.prototype.movePlayer = function() {
 		//  Do this AFTER the collide check, or we won't have blocked/touching set
 		this.player.standing = mzph(this.player).isStanding();
+
 		mzph(this.player).setVelocityX(0);
-
-
 		if (mzph().leftIsDown()) {
-			mzph(this.player).augmentVelocityX(-playerVelocity.x);
+			mzph(this.player).augmentVelocityX(-PLAYER_VELOCITY.x);
 
 			if (this.player.standing) {
 				mzph(this.player).playAnimation('runLeft');
@@ -124,22 +140,24 @@ $(document).ready(function() {
 			}
 
 			this.player.facing = 'left';
-			mzph(this.trees).augmentTilePositionX(2);
+
+			// con esto desplazamos el fondo de los arboles 
+			mzph(this.trees).augmentTilePositionX(TILE_VELOCITY.x);
 		} else if (mzph().rightIsDown()) {
-			console.log("this.player.standing: " + this.player.standing);
-			mzph(this.player).setVelocityX(playerVelocity.x);
+			mzph(this.player).setVelocityX(PLAYER_VELOCITY.x);
 
 			if (this.player.standing) {
 				mzph(this.player).playAnimation('runRight');
 			} else {
-				console.log("jump right!");
 				mzph(this.player).playAnimation('jumpRight');
 			}
 
 			this.player.facing = 'right';
-			mzph(this.trees).reduceTilePositionX(2);
+
+			// con esto desplazamos el fondo de los arboles 
+			mzph(this.trees).reduceTilePositionX(TILE_VELOCITY.x);
 		} else {
-			//no key is being pressed
+			// if no key is being pressed
 
 			if (this.player.facing === 'left') {
 				if (this.player.standing) {
@@ -159,7 +177,6 @@ $(document).ready(function() {
 		//  No longer this.player.standing on the edge, but were
 		//  Give them a 250ms grace period to jump after falling
 		if (!this.player.standing && this.player.wasStanding) {
-			console.log("this.time.time: " + this.time.time);
 			this.edgeTimer = mzph().getGameTimeTime() + 250;
 		}
 
@@ -172,6 +189,16 @@ $(document).ready(function() {
 		}
 
 		this.player.wasStanding = this.player.standing;
+
+	};
+
+
+	PhaserGame.prototype.update = function() {
+		mzph().arcadeCollide(this.player, this.platforms);
+
+		mzph().arcadeCollide(this.littleYellowEnemies, this.platforms);
+
+		this.movePlayer();
 	};
 
 	mzph().addGameState('game', PhaserGame, true);

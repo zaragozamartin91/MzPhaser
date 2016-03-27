@@ -363,7 +363,7 @@ MzPhaser.prototype.addTileSprite = function(x, y, width, height, key, frame, gro
 	return this.game.add.tileSprite(x, y, width, height, key, frame, group);
 };
 /** 
- * 
+ *  Desplaza la imagen para dar ilusion de scrolling.
  */
 MzPhaser.prototype.augmentTilePositionX = function(x) {
 	this.phaserObject.tilePosition.x += x;
@@ -473,6 +473,8 @@ MzPhaser.prototype.setRotation = function(rot) {
 MzPhaser.prototype.getRotation = function() {
 	return this.phaserObject.rotation;
 };
+
+
 
 /** 
 The angle property is the rotation of the Game Object in degrees from its original orientation.
@@ -593,6 +595,28 @@ MzPhaser.prototype.setBodySize = function(width, height, offsetX, offsetY) {
 	else this.phaserObject.setSize(width, height, offsetX, offsetY);
 };
 
+MzPhaser.prototype.resizeBody = function(factor) {
+	var width = this.getBodyWidth() * factor;
+	var height = this.getBodyHeight() * factor;
+
+	return this.setBodySize(width, height);
+};
+
+MzPhaser.prototype.getBodyWidth = function() {
+	if (this.phaserObject.body) {
+		return this.phaserObject.body.width;
+	} else {
+		return this.phaserObject.width;
+	}
+};
+
+MzPhaser.prototype.getBodyHeight = function() {
+	if (this.phaserObject.body) {
+		return this.phaserObject.body.height;
+	} else {
+		return this.phaserObject.height;
+	}
+};
 
 /** 
 Destroy this DisplayObject. Removes all references to transformCallbacks, its parent, the stage, filters, bounds, 
