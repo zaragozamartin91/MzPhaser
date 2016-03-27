@@ -299,6 +299,10 @@ MzPhaser.prototype.setSkipQuadTree = function(skip) {
 	if (skip === undefined) this.game.physics.arcade.skipQuadTree = true;
 	else this.game.physics.arcade.skipQuadTree = skip;
 };
+MzPhaser.prototype.disableSkipQuadTree = function() {
+	return this.setSkipQuadTree(false);
+};
+
 
 
 /** 
@@ -358,7 +362,21 @@ group	Phaser.Group	<optional> - Optional Group to add the object to. If not spec
 MzPhaser.prototype.addTileSprite = function(x, y, width, height, key, frame, group) {
 	return this.game.add.tileSprite(x, y, width, height, key, frame, group);
 };
-
+/** 
+ * 
+ */
+MzPhaser.prototype.augmentTilePositionX = function(x) {
+	this.phaserObject.tilePosition.x += x;
+};
+MzPhaser.prototype.reduceTilePositionX = function(x) {
+	this.phaserObject.tilePosition.x -= x;
+};
+MzPhaser.prototype.augmentTilePositionY = function(y) {
+	this.phaserObject.tilePosition.y += y;
+};
+MzPhaser.prototype.reduceTilePositionY = function(y) {
+	this.phaserObject.tilePosition.y -= y;
+};
 
 /** 
 This moves the Game Object to the given x/y world coordinates and sets fresh, exists, visible and renderable to true.
@@ -514,6 +532,19 @@ MzPhaser.prototype.augmentVelocityX = function(vx) {
 MzPhaser.prototype.augmentVelocityY = function(vy) {
 	this.phaserObject.body.velocity.y += vy;
 };
+MzPhaser.prototype.reduceVelocityX = function(vx) {
+	this.phaserObject.body.velocity.x -= vx;
+};
+MzPhaser.prototype.reduceVelocityY = function(vy) {
+	this.phaserObject.body.velocity.y -= vy;
+};
+MzPhaser.prototype.resetVelocityX = function() {
+	this.phaserObject.body.velocity.x = 0;
+};
+MzPhaser.prototype.resetVelocityY = function() {
+	this.phaserObject.body.velocity.y = 0;
+};
+
 
 /** 
 Invierte la velocidad de un cuerpo.
