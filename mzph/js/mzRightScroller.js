@@ -15,13 +15,28 @@ $(document).ready(function() {
 		x: 1,
 		y: 0
 	};
+	GRAVITY = {
+		x: 0,
+		y: 750
+	};
+	JUMP_POWER = {
+		x: 0,
+		y: -500
+	};
+	LITTLE_YELLOW_ENEMY_VELOCITY = {
+		x: 20,
+		y: 0
+	};
 
 	game = mzph().newGame(GAME_SIZE.x, GAME_SIZE.y, 'game');
 
 	var PhaserGame = function() {
 		this.player = {};
 		this.platformGroup = {};
-		this.littleYellowEnemyGroup = {};
+
+		this.littleYellowEnemyGroup = {}; // grupo de enemigos amarillos
+		this.invisibleEdgeGroup = {}; // borde invisible de plataformas para que los enemigos no se caigan
+
 		this.sky = {};
 
 		this.edgeTimer = 0; //cuenta limite de tiempo para saltar despues de caer del eje
@@ -37,7 +52,7 @@ $(document).ready(function() {
 		mzph().setRenderSessionRoundPixels();
 		mzph().resizeWorld(WORLD_SIZE.x, WORLD_SIZE.y);
 		mzph().startArcadePhysicsSystem();
-		mzph().setPhysicsArcadeGravityY(750);
+		mzph().setPhysicsArcadeGravityY(GRAVITY.y);
 
 		mzph().disableSkipQuadTree();
 	};
@@ -47,6 +62,7 @@ $(document).ready(function() {
 
 		mzph().setCrossOriginLoadAnonymous();
 
+		mzph().loadImage('target', 'assets/target.png');
 		mzph().loadImage('trees', 'assets/treesMedium.png');
 		mzph().loadImage('clouds', 'assets/cloudsBig.png');
 		mzph().loadImage('platform', 'assets/platform.png');
@@ -56,34 +72,54 @@ $(document).ready(function() {
 	};
 
 	PhaserGame.prototype.createEnemies = function() {
+		console.log("Creating enemies...");
+
 		this.littleYellowEnemyGroup = mzph().addPhysicsGroup();
-		var littleYellowEnemies = [];
+		var littleYellowEnemyGroup = this.littleYellowEnemyGroup;
 
-		littleYellowEnemies.push(mzph(this.littleYellowEnemyGroup).createInGroup(0, 200 - 50, 'littleYellowEnemy'));
-		littleYellowEnemies.push(mzph(this.littleYellowEnemyGroup).createInGroup(300, 500 - 50, 'littleYellowEnemy'));
-		littleYellowEnemies.push(mzph(this.littleYellowEnemyGroup).createInGroup(600, 400 - 50, 'littleYellowEnemy'));
-		littleYellowEnemies.push(mzph(this.littleYellowEnemyGroup).createInGroup(700, 250 - 50, 'littleYellowEnemy'));
+		this.invisibleEdgeGroup = mzph().addPhysicsGroup();
+		var invisibleEdgeGroup = this.invisibleEdgeGroup;
 
-		littleYellowEnemies.forEach(function(enemy) {
+		this.platformGroup.children.forEach(function(platform) {
+			var platformWidth = mzph(platform).getBodyWidth();
+			var platformHeight = mzph(platform).getBodyHeight();
+			var posX = mzph(platform).getBodyX();
+			var posY = mzph(platform).getBodyY();
+
+			mzph(littleYellowEnemyGroup).createInGroup(posX + platformWidth * 0.45, posY - 50, 'littleYellowEnemy');
+
+
+			mzph(invisibleEdgeGroup).createInGroup(posX - 10 , posY - platformHeight);
+			mzph(invisibleEdgeGroup).createInGroup(posX + platformWidth - 10, posY - platformHeight);
+		});
+		mzph(invisibleEdgeGroup).setAllowGravityToAll(false);
+		mzph(invisibleEdgeGroup).setImmovableToAll(true);
+		
+
+
+		this.littleYellowEnemyGroup.children.forEach(function(enemy) {
 			mzph(enemy).resizeBody(0.9);
 			mzph(enemy).addAnimation('idleRight', [5], 5, false);
 			mzph(enemy).addAnimation('idleLeft', [0], 5, false);
-			mzph(enemy).addAnimation('runLeft', [3, 4], 7, true);
-			mzph(enemy).addAnimation('runRight', [1, 2], 7, true);
+			mzph(enemy).addAnimation('runRight', [3, 4], 7, true);
+			mzph(enemy).addAnimation('runLeft', [1, 2], 7, true);
 			// VER DE AGREGAR OBJETOS INVISIBLES EN LAS PLATAFORMAS QUE PUEDAN COLISIONAR CON LOS ENEMIGOS PERO NO CON  EL JUGADOR PARA QUE LOS ENEMIGOS CAMINEN DE UN LADO A OTRO
+
+			mzph(enemy).playAnimation('runRight');
+			mzph(enemy).setVelocityX(LITTLE_YELLOW_ENEMY_VELOCITY.x);
+			enemy.facing = 'right';
 		});
+
 	};
 
 	PhaserGame.prototype.createPlatforms = function() {
 		this.platformGroup = mzph().addPhysicsGroup();
 		//CREAMOS LAS PLATAFORMAS DE PRUEBA
 		mzph(this.platformGroup).createInGroup(0, 200, 'platform');
-		mzph(this.platformGroup).createInGroup(300, 500, 'platform');
-		mzph(this.platformGroup).createInGroup(600, 400, 'platform');
+		mzph(this.platformGroup).createInGroup(300, 400, 'platform');
+		mzph(this.platformGroup).createInGroup(600, 500, 'platform');
 		mzph(this.platformGroup).createInGroup(700, 250, 'platform');
 		//FIN DE PLATAFORMAS DE PRUEBA
-		mzph(this.platformGroup).setAllowGravityToAll(false);
-		mzph(this.platformGroup).setImmovableToAll(true);
 		mzph(this.platformGroup).setAllowGravityToAll(false);
 		mzph(this.platformGroup).setImmovableToAll(true);
 	};
@@ -131,7 +167,7 @@ $(document).ready(function() {
 		//  Do this AFTER the collide check, or we won't have blocked/touching set
 		this.player.standing = mzph(this.player).isStanding();
 
-		mzph(this.player).setVelocityX(0);
+		mzph(this.player).resetVelocityX();
 		if (mzph().leftIsDown()) {
 			mzph(this.player).augmentVelocityX(-PLAYER_VELOCITY.x);
 
@@ -185,7 +221,7 @@ $(document).ready(function() {
 		if (mzph().upIsDown()) {
 			//  Allowed to jump?
 			if ((this.player.standing || mzph().getGameTimeTime() <= this.edgeTimer) && this.jumpTimer < mzph().getGameTimeTime()) {
-				mzph(this.player).setVelocityY(-500);
+				mzph(this.player).setVelocityY(JUMP_POWER.y);
 				this.jumpTimer = mzph().getGameTimeTime() + 750;
 			}
 		}
@@ -195,10 +231,31 @@ $(document).ready(function() {
 	};
 
 
+	PhaserGame.prototype.enemyRebound = function(enemy,edge){
+		if(enemy.facing === 'right'){
+			mzph(enemy).setVelocityX( -LITTLE_YELLOW_ENEMY_VELOCITY.x );
+			mzph(enemy).playAnimation('runLeft');
+			enemy.facing = 'left';
+			return;
+		}
+
+		if(enemy.facing === 'left'){
+			mzph(enemy).setVelocityX( LITTLE_YELLOW_ENEMY_VELOCITY.x );
+			mzph(enemy).playAnimation('runRight');
+			enemy.facing = 'right';
+			return;
+		}
+	};
+
+
 	PhaserGame.prototype.update = function() {
+		console.log("target0: "+ mzph(this.invisibleEdgeGroup.children[0]).getBodyX()  );
+
 		mzph().arcadeCollide(this.player, this.platformGroup);
 
 		mzph().arcadeCollide(this.littleYellowEnemyGroup, this.platformGroup);
+
+		mzph().arcadeCollide(this.littleYellowEnemyGroup, this.invisibleEdgeGroup , this.enemyRebound);
 
 		this.movePlayer();
 	};
