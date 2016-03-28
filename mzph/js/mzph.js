@@ -674,10 +674,6 @@ MzPhaser.prototype.playAnimation = function(name, frameRate, loop, killOnComplet
 	return this.phaserObject.play(name, frameRate, loop, killOnComplete);
 };
 
-MzPhaser.prototype.playAnimation = function(name, frameRate, loop, killOnComplete) {
-	return this.phaserObject.play(name, frameRate, loop, killOnComplete);
-};
-
 /** 
 Detiene la animacion del sprite.
  */
@@ -744,6 +740,43 @@ MzPhaser.prototype.create = function(x, y, key, frame, exists) {
 };
 MzPhaser.prototype.createInGroup = function(x, y, key, frame, exists) {
 	return this.phaserObject.create(x, y, key, frame, exists);
+};
+
+
+
+/** 
+FUNCION DE Group
+
+Creates multiple Phaser.Sprite objects and adds them to the top of this group.
+Useful if you need to quickly generate a pool of identical sprites, such as bullets.
+By default the sprites will be set to not exist and will be positioned at 0, 0 (relative to the group.x/y). Use classType to change the type of object created.
+
+quantity	integer	- The number of Sprites to create.
+key	string - The Game.cache key of the image that this Sprite will use.
+frame	integer | string	<optional> - If the Sprite image contains multiple frames you can specify which one to use here.
+exists	boolean	<optional> false - The default exists state of the Sprite.
+ */
+MzPhaser.prototype.createMultiple = function(quantity, key, frame, exists) {
+	return this.phaserObject.createMultiple(quantity, key, frame, exists);
+};
+
+/** 
+FUNCION DE Group
+
+Get the first display object that exists, or doesn't exist.
+You can use the optional argument createIfNull to create a new Game Object if none matching your exists argument were found in this Group.
+It works by calling Group.create passing it the parameters given to this method, and returning the new child.
+If a child was found , createIfNull is false and you provided the additional arguments then the child will be reset and/or have a new texture loaded on it. This is handled by Group.resetChild.
+
+exists	boolean	<optional> true	- If true, find the first existing child; otherwise find the first non-existing child.
+createIfNull	boolean	<optional> false - If true and no alive children are found a new one is created.
+x	number	<optional> - The x coordinate to reset the child to. The value is in relation to the group.x point.
+y	number	<optional> - The y coordinate to reset the child to. The value is in relation to the group.y point.
+key	string | Phaser.RenderTexture | Phaser.BitmapData | Phaser.Video | PIXI.Texture	<optional> - This is the image or texture used by the Sprite during rendering. It can be a string which is a reference to the Cache Image entry, or an instance of a RenderTexture, BitmapData, Video or PIXI.Texture.
+frame	string | number	<optional> - If this Sprite is using part of a sprite sheet or texture atlas you can specify the exact frame to use by giving a string or numeric index.
+ */
+MzPhaser.prototype.getFirstExists = function(exists, createIfNull, x, y, key, frame) {
+	return this.phaserObject.getFirstExists(exists, createIfNull, x, y, key, frame);
 };
 
 
