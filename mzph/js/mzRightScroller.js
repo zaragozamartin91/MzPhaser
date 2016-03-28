@@ -27,6 +27,10 @@ $(document).ready(function() {
 		x: 20,
 		y: 0
 	};
+	PLAYER_RESET_SPOT = {
+		x: 0,
+		y: 0
+	};
 
 	game = mzph().newGame(GAME_SIZE.x, GAME_SIZE.y, 'game');
 
@@ -44,6 +48,8 @@ $(document).ready(function() {
 
 		this.player.facing = 'left';
 		this.player.wasStanding = false;
+
+		this.updateCycle = 0;
 	};
 
 	PhaserGame.prototype.init = function() {
@@ -85,21 +91,25 @@ $(document).ready(function() {
 		this.invisibleEdgeGroup = mzph().addPhysicsGroup();
 		var invisibleEdgeGroup = this.invisibleEdgeGroup;
 
+		var i = 0;
 		this.platformGroup.children.forEach(function(platform) {
-			var platformWidth = mzph(platform).getBodyWidth();
-			var platformHeight = mzph(platform).getBodyHeight();
-			var posX = mzph(platform).getBodyX();
-			var posY = mzph(platform).getBodyY();
+			if (i > 0) {
+				var platformWidth = mzph(platform).getBodyWidth();
+				var platformHeight = mzph(platform).getBodyHeight();
+				var posX = mzph(platform).getBodyX();
+				var posY = mzph(platform).getBodyY();
 
-			mzph(littleYellowEnemyGroup).createInGroup(posX + platformWidth * 0.45, posY - 50, 'littleYellowEnemy');
+				mzph(littleYellowEnemyGroup).createInGroup(posX + platformWidth * 0.45, posY - 50, 'littleYellowEnemy');
 
 
-			mzph(invisibleEdgeGroup).createInGroup(posX - 10, posY - platformHeight);
-			mzph(invisibleEdgeGroup).createInGroup(posX + platformWidth - 10, posY - platformHeight);
+				mzph(invisibleEdgeGroup).createInGroup(posX - 10, posY - platformHeight);
+				mzph(invisibleEdgeGroup).createInGroup(posX + platformWidth - 10, posY - platformHeight);
+			}
+
+			i++;
 		});
 		mzph(invisibleEdgeGroup).setAllowGravityToAll(false);
 		mzph(invisibleEdgeGroup).setImmovableToAll(true);
-
 
 
 		this.littleYellowEnemyGroup.children.forEach(function(enemy) {
@@ -132,8 +142,6 @@ $(document).ready(function() {
 	PhaserGame.prototype.createPlayerMegaman = function() {
 		this.player = mzph().addSprite(0, 0, 'dude');
 
-
-
 		mzph(this.player).enableArcadePhysicsOn();
 		mzph(this.player.body).setBodyCollideWorldBounds();
 		mzph(this.player).resizeBody(0.95);
@@ -147,10 +155,7 @@ $(document).ready(function() {
 
 		mzph(this.player).cameraFollow();
 
-		PLAYER_ORIGINAL_POS = {
-			x: mzph(this.player).getBodyX(),
-			y: mzph(this.player).getBodyY()
-		};
+		this.player.isAlive = true;
 	};
 
 	PhaserGame.prototype.createDudeExplosion = function(x, y) {
@@ -198,6 +203,15 @@ $(document).ready(function() {
 		this.createPlayerMegaman();
 
 		mzph().createCursorKeys();
+
+		var stateText = game.add.text(game.centerX, game.centerY, 'Presiona X para reiniciar ', {
+			font: '50px Arial',
+			fill: '#fff'
+		});
+		stateText.anchor.setTo(0, 0);
+		stateText.visible = false;
+		mzph(stateText).setFixedToCamera();
+		this.stateText = stateText;
 	};
 
 
@@ -286,15 +300,15 @@ $(document).ready(function() {
 	};
 
 
-	PhaserGame.prototype.killplayer = function() {
-		console.log("BEFORE RESET player.position: " + this.player.position.x + " " + this.player.position.y);
-		mzph(this.player).reset(0, 0);
-		console.log("RIGHT AFTER RESET player.position: " + this.player.position.x + " " + this.player.position.y);
+	PhaserGame.prototype.restartPlayer = function() {
+		mzph(this.player).reset(PLAYER_RESET_SPOT.x, PLAYER_RESET_SPOT.y);
+		this.player.justRevived = true;
+		mzph(this.stateText).setInvisible();
 	};
 
 	PhaserGame.prototype.playerHit = function(player) {
-		//var posX = this.player.x;
-		//var posY = this.player.y;
+		this.player.isAlive = false;
+		//mzph().cameraNotFollowAnything();
 
 		var posX = mzph(player).getBodyX();
 		var posY = mzph(player).getBodyY();
@@ -302,29 +316,44 @@ $(document).ready(function() {
 		mzph(this.dudeExplosion).reset(posX, posY);
 		mzph(this.dudeExplosion).playAnimation('explode', 30, false);
 
-		mzph(player).kill();
 
-		game.time.events.add(Phaser.Timer.SECOND * 1, this.killplayer, this);
+		mzph(this.player).kill();
+		// mzph(this.player).reset(0, 0);
 
-		this.player.killed = true;
+		mzph(this.stateText).setVisible(true);
+		//the "click to restartPlayer" handler
+		game.input.onTap.addOnce(this.restartPlayer, this);
 	};
 
 	PhaserGame.prototype.update = function() {
-		if (this.player.killed) {
-			console.log("FIRST UPDATE player.position: " + this.player.position.x + " " + this.player.position.y);
-			this.player.killed = false;
+		console.log("playerX:" + this.player.x + " gameX:" + game.world.x);
+
+		if (this.player.justRevived) {
+			this.updateCycle = 0;
+			this.player.justRevived = false;
+		}
+		if (this.updateCycle < 10) {
+			mzph(this.player).reset(PLAYER_RESET_SPOT.x, PLAYER_RESET_SPOT.y);
+		}
+
+		if (this.player.justRevived) {
+			console.log("JUST REVIVED playerX:" + this.player.x + " gameX:" + game.world.x);
+			this.player.justRevived = false;
 		}
 
 		mzph().arcadeCollide(this.player, this.platformGroup);
 
-		mzph().arcadeCollide(this.littleYellowEnemyGroup, this.platformGroup);
+		mzph().arcadeOverlap(this.player, this.littleYellowEnemyGroup, this.playerHit, null, this);
+		this.movePlayer();
 
+		mzph().arcadeCollide(this.littleYellowEnemyGroup, this.platformGroup);
 		mzph().arcadeCollide(this.littleYellowEnemyGroup, this.invisibleEdgeGroup, this.enemyRebound);
 
-		mzph().arcadeOverlap(this.player, this.littleYellowEnemyGroup, this.playerHit, null, this);
-
-		this.movePlayer();
+		if (this.updateCycle < 100) {
+			this.updateCycle++;
+		}
 	};
+
 
 	mzph().addGameState('game', PhaserGame, true);
 });
