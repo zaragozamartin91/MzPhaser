@@ -75,7 +75,8 @@ $(document).ready(function() {
 		mzph().loadImage('ice-platform', 'assets/ice-platform.png');
 
 		// mzph().loadSpritesheet('dude', 'assets/zero_z1standardframes.gif', 44, 47); CREACION DE ZERO
-		mzph().loadSpritesheet('dude', 'assets/megamanOldSimple.png', 36, 36, 112); // CREACION DE MEGAMAN
+		// mzph().loadSpritesheet('dude', 'assets/megamanOldSimple.png', 36, 36, 112); // CREACION DE MEGAMAN
+		mzph().loadSpritesheet('dude', 'assets/megamanOldGrid.png', 39, 39, 18 * 11);
 
 		mzph().loadSpritesheet('littleYellowEnemy', 'assets/littleYellow.png', 40, 24);
 
@@ -108,9 +109,10 @@ $(document).ready(function() {
 		});
 
 
-		this.littleYellowEnemyGroup.forEach( function(enemy){
-			mzph(enemy).resizeBodyWidth(0.7);
-		} );
+		this.littleYellowEnemyGroup.forEach(function(enemy) {
+			mzph(enemy).setAnchor(0.5, 0.5);
+			mzph(enemy).resizeBodyWidth(0.5);
+		});
 
 		mzph(invisibleEdgeGroup).setAllowGravityToAll(false);
 		mzph(invisibleEdgeGroup).setImmovableToAll(true);
@@ -162,12 +164,6 @@ $(document).ready(function() {
 		this.player.isAlive = true;
 	};
 
-	PhaserGame.prototype.createDudeExplosion = function(x, y) {
-		this.dudeExplosion = mzph().addSprite(0, 0, 'dudeExplosion');
-		mzph(this.dudeExplosion).addAnimation('explode', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]);
-		mzph(this.dudeExplosion).addAnimation('notExplode', [17]);
-		mzph(this.dudeExplosion).setInvisible();
-	};
 
 	PhaserGame.prototype.createPlayerZero = function() {
 		this.player = mzph().addSprite(0, 0, 'dude');
@@ -183,6 +179,38 @@ $(document).ready(function() {
 
 		mzph(this.player).cameraFollow();
 	};
+
+	PhaserGame.prototype.createPlayerMegamanComplex = function() {
+		this.player = mzph().addSprite(0, 0, 'dude');
+
+		mzph(this.player).enableArcadePhysicsOn();
+		mzph(this.player.body).setBodyCollideWorldBounds();
+		mzph(this.player).resizeBody(0.95);
+		mzph(this.player).addAnimation('idleLeft', [120, 119, 118], 3, true);
+		mzph(this.player).addAnimation('idleRight', [0, 1, 2], 3, true);
+		mzph(this.player).addAnimation('runRight', [3, 4, 5, 6, 7, 8, 9], 8, true);
+		mzph(this.player).addAnimation('runLeft', [117, 116, 115, 114, 113, 112, 111], 8, true);
+		mzph(this.player).addAnimation('jumpLeft', [128, 127, 126, 125, 124], 5, false);
+		mzph(this.player).addAnimation('jumpRight', [14, 15, 16, 17, 18], 5, false);
+
+		mzph(this.player).setAnchor(0.5,0.5);
+		mzph(this.player).resizeBody(0.6,0.6);
+
+		mzph(this.player).cameraFollow();
+
+		this.player.isAlive = true;
+	};
+
+
+	PhaserGame.prototype.createDudeExplosion = function(x, y) {
+		this.dudeExplosion = mzph().addSprite(0, 0, 'dudeExplosion');
+		mzph(this.dudeExplosion).addAnimation('explode', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]);
+		mzph(this.dudeExplosion).addAnimation('notExplode', [17]);
+		mzph(this.dudeExplosion).setInvisible();
+
+		mzph(this.dudeExplosion).setAnchor(0.5,0.5);
+	};
+
 
 
 	PhaserGame.prototype.createBackground = function() {
@@ -204,7 +232,8 @@ $(document).ready(function() {
 
 		this.createDudeExplosion();
 
-		this.createPlayerMegaman();
+		// this.createPlayerMegaman();
+		this.createPlayerMegamanComplex();
 
 		mzph().createCursorKeys();
 
@@ -367,6 +396,10 @@ $(document).ready(function() {
 			mzph().renderDebugBodyBounds(enemy);
 		});
 		//game.debug.body(sprite2);
+
+		this.invisibleEdgeGroup.forEach(function(edge) {
+			mzph().renderDebugBodyBounds(edge);
+		});
 	}
 
 
