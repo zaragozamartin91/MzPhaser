@@ -100,14 +100,18 @@ $(document).ready(function() {
 				var posY = mzph(platform).getBodyY();
 
 				mzph(littleYellowEnemyGroup).createInGroup(posX + platformWidth * 0.45, posY - 50, 'littleYellowEnemy');
-
-
 				mzph(invisibleEdgeGroup).createInGroup(posX - 10, posY - platformHeight);
 				mzph(invisibleEdgeGroup).createInGroup(posX + platformWidth - 10, posY - platformHeight);
 			}
 
 			i++;
 		});
+
+
+		this.littleYellowEnemyGroup.forEach( function(enemy){
+			mzph(enemy).resizeBodyWidth(0.7);
+		} );
+
 		mzph(invisibleEdgeGroup).setAllowGravityToAll(false);
 		mzph(invisibleEdgeGroup).setImmovableToAll(true);
 
@@ -316,7 +320,8 @@ $(document).ready(function() {
 		mzph(this.dudeExplosion).reset(posX, posY);
 		mzph(this.dudeExplosion).playAnimation('explode', 30, false);
 
-
+		this.player.body.x = 0;
+		this.player.body.y = 0;
 		mzph(this.player).kill();
 		// mzph(this.player).reset(0, 0);
 
@@ -353,6 +358,16 @@ $(document).ready(function() {
 			this.updateCycle++;
 		}
 	};
+
+	PhaserGame.prototype.render = function() {
+		mzph().showDebugBodyInfo(this.player, 32, 32);
+
+		mzph().renderDebugBodyBounds(this.player);
+		this.littleYellowEnemyGroup.forEach(function(enemy) {
+			mzph().renderDebugBodyBounds(enemy);
+		});
+		//game.debug.body(sprite2);
+	}
 
 
 	mzph().addGameState('game', PhaserGame, true);

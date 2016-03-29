@@ -602,6 +602,19 @@ MzPhaser.prototype.resizeBody = function(factor) {
 	return this.setBodySize(width, height);
 };
 
+MzPhaser.prototype.resizeBodyWidth = function(factor) {
+	var width = this.getBodyWidth() * factor;
+	var height = this.getBodyHeight();
+
+	return this.setBodySize(width, height);
+};
+MzPhaser.prototype.resizeBodyHeight = function(factor) {
+	var width = this.getBodyWidth();
+	var height = this.getBodyHeight() * factor;
+
+	return this.setBodySize(width, height);
+};
+
 MzPhaser.prototype.getBodyWidth = function() {
 	if (this.phaserObject.body) {
 		return this.phaserObject.body.width;
@@ -1241,4 +1254,27 @@ Marca a un objeto como fijo a la camara.
  */
 MzPhaser.prototype.setFixedToCamera = function() {
 	this.phaserObject.fixedToCamera = true;
+};
+
+/** 
+Render a Sprites Physic Body information
+
+sprite	Phaser.Sprite - The sprite to be rendered.
+x	number - X position of the debug info to be rendered.
+y	number - Y position of the debug info to be rendered.
+color	string	<optional> 'rgb(255,255,255)' - color of the debug info to be rendered. (format is css color string).
+ */
+MzPhaser.prototype.showDebugBodyInfo = function(sprite, x, y, color) {
+	return this.game.debug.bodyInfo(sprite, x, y, color);
+};
+
+/** 
+Render a Sprites Physics body if it has one set. The body is rendered as a filled or stroked rectangle. This only works for Arcade Physics, Ninja Physics (AABB and Circle only) and Box2D Physics bodies. To display a P2 Physics body you should enable debug mode on the body when creating it.
+
+sprite	Phaser.Sprite - The Sprite who's body will be rendered.
+color	string	<optional> 'rgba(0,255,0,0.4)' - Color of the debug rectangle to be rendered. The format is a CSS color string such as '#ff0000' or 'rgba(255,0,0,0.5)'.
+filled	boolean	<optional> true	- Render the body as a filled rectangle (true) or a stroked rectangle (false)
+ */
+MzPhaser.prototype.renderDebugBodyBounds = function(sprite, color, filled) {
+	return this.game.debug.body(sprite, color, filled);
 };
