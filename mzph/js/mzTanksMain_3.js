@@ -110,7 +110,7 @@
 			// creamos el control de teclas de flechas y agregamos la tecla de disparo
 			this.cursors = mzph().createCursorKeys();
 			this.fireButton = mzph().addKey(Phaser.Keyboard.SPACEBAR);
-			mzph(this.fireButton).onKeyDownAddListener(this.fire, this);
+			mzph(this.fireButton).onDownAdd(this.fire, this);
 		},
 
 		fire: function() {

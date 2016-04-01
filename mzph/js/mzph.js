@@ -1136,6 +1136,9 @@ MzPhaser.prototype.addKey = function(keycode) {
 MzPhaser.prototype.addKeyboardKey = function(keycode) {
 	return this.game.input.keyboard.addKey(keycode);
 };
+MzPhaser.prototype.addSpacebarKey = function(keycode) {
+	return this.addKeyboardKey(Phaser.KeyCode.SPACEBAR);
+};
 
 /** 
 Add an event listener for this signal.

@@ -7,10 +7,6 @@ $(document).ready(function() {
 		x: 640,
 		y: 480
 	};
-	PLAYER_VELOCITY = {
-		x: 200,
-		y: 0
-	};
 	TILE_VELOCITY = {
 		x: 1,
 		y: 0
@@ -19,17 +15,30 @@ $(document).ready(function() {
 		x: 0,
 		y: 750
 	};
-	JUMP_POWER = {
+	LITTLE_YELLOW_ENEMY_VELOCITY = {
+		x: 20,
+		y: 0
+	};
+
+	PLAYER_JUMP_POWER = {
 		x: 0,
 		y: -500
 	};
-	LITTLE_YELLOW_ENEMY_VELOCITY = {
-		x: 20,
+	PLAYER_VELOCITY = {
+		x: 200,
 		y: 0
 	};
 	PLAYER_RESET_SPOT = {
 		x: 0,
 		y: 0
+	};
+	PLAYER_DASH_INTERVAL = 500;
+	PLAYER_EDGE_JUMP_TIME_INTERVAL = 250;
+	PLAYER_JUMP_TIME_INTERVAL = 750;
+	PLAYER_DASH_TIME = 200;
+	PLAYER_DASH_VELOCITY = {
+		x: PLAYER_VELOCITY.x * 3,
+		y: PLAYER_VELOCITY.y * 3
 	};
 
 	game = mzph().newGame(GAME_SIZE.x, GAME_SIZE.y, 'game');
@@ -48,7 +57,6 @@ $(document).ready(function() {
 
 		this.player.facing = 'left';
 		this.player.wasStanding = false;
-
 		this.updateCycle = 0;
 	};
 
@@ -160,8 +168,6 @@ $(document).ready(function() {
 
 
 		mzph(this.player).cameraFollow();
-
-		this.player.isAlive = true;
 	};
 
 
@@ -192,13 +198,13 @@ $(document).ready(function() {
 		mzph(this.player).addAnimation('runLeft', [117, 116, 115, 114, 113, 112, 111], 8, true);
 		mzph(this.player).addAnimation('jumpLeft', [128, 127, 126, 125, 124], 5, false);
 		mzph(this.player).addAnimation('jumpRight', [14, 15, 16, 17, 18], 5, false);
+		mzph(this.player).addAnimation('dashRight', [22, 23, 24, 25, 26], 8, false);
+		mzph(this.player).addAnimation('dashLeft', [142, 141, 140, 139, 138], 8, false);
 
-		mzph(this.player).setAnchor(0.5,0.5);
-		mzph(this.player).resizeBody(0.6,0.6);
+		mzph(this.player).setAnchor(0.5, 0.5);
+		mzph(this.player).resizeBody(0.6, 0.6);
 
 		mzph(this.player).cameraFollow();
-
-		this.player.isAlive = true;
 	};
 
 
@@ -208,7 +214,7 @@ $(document).ready(function() {
 		mzph(this.dudeExplosion).addAnimation('notExplode', [17]);
 		mzph(this.dudeExplosion).setInvisible();
 
-		mzph(this.dudeExplosion).setAnchor(0.5,0.5);
+		mzph(this.dudeExplosion).setAnchor(0.5, 0.5);
 	};
 
 
@@ -219,6 +225,18 @@ $(document).ready(function() {
 		mzph(this.sky).setFixedToCamera();
 		this.trees = mzph().addTileSprite(0, 100, 800, 600, 'trees');
 		mzph(this.trees).setFixedToCamera();
+	};
+
+	PhaserGame.prototype.createGameStateText = function() {
+		var stateText = game.add.text(game.centerX, game.centerY, 'Presiona X para reiniciar ', {
+			font: '50px Arial',
+			fill: '#fff'
+		});
+		stateText.anchor.setTo(0, 0);
+		stateText.visible = false;
+		mzph(stateText).setFixedToCamera();
+		this.stateText = stateText;
+
 	};
 
 	PhaserGame.prototype.create = function() {
@@ -232,25 +250,59 @@ $(document).ready(function() {
 
 		this.createDudeExplosion();
 
-		// this.createPlayerMegaman();
 		this.createPlayerMegamanComplex();
 
 		mzph().createCursorKeys();
 
-		var stateText = game.add.text(game.centerX, game.centerY, 'Presiona X para reiniciar ', {
-			font: '50px Arial',
-			fill: '#fff'
-		});
-		stateText.anchor.setTo(0, 0);
-		stateText.visible = false;
-		mzph(stateText).setFixedToCamera();
-		this.stateText = stateText;
+		this.createGameStateText();
+
+		this.player.dash = {};
+		this.player.dash.key = mzph().addSpacebarKey();
+		this.player.dash.timer = mzph().getGameTimeTime();
+		this.player.dash.now = false;
+		mzph(this.player.dash.key).onKeyDownAddListener(this.triggerPlayerDash, this);
 	};
 
+	PhaserGame.prototype.triggerPlayerDash = function() {
+		// si el jugador esta dasheando, no se dispara el dash
+		if (this.player.dash.now) {
+			return;
+		}
 
-	PhaserGame.prototype.movePlayer = function() {
+		// si el jugador ejecuto dash en mid air, no puede volver a dashear
+		if (this.player.dash.midAir) {
+			return;
+		}
+
+		// si el tiempo de juego supera al timer limite de dash, se ejecuta la logica de dash...
+		var playerReadyToDash = this.player.dash.timer < mzph().getGameTimeTime();
+		if (playerReadyToDash) {
+			this.player.dash.now = true;
+
+			if (!this.player.standing) {
+				this.player.dash.midAir = true;
+			}
+
+			if (this.player.facing == 'left') {
+				mzph(this.player).playAnimation('dashLeft');
+				mzph(this.player).setVelocityX(-PLAYER_DASH_VELOCITY.x);
+			}
+
+			if (this.player.facing == 'right') {
+				mzph(this.player).playAnimation('dashRight');
+				mzph(this.player).setVelocityX(PLAYER_DASH_VELOCITY.x);
+			}
+
+			this.player.dash.remain = mzph().getGameTimeTime() + PLAYER_DASH_TIME;
+		}
+	};
+
+	PhaserGame.prototype.playerMove = function() {
 		//  Do this AFTER the collide check, or we won't have blocked/touching set
 		this.player.standing = mzph(this.player).isStanding();
+		if (this.player.standing) {
+			this.player.dash.midAir = false;
+		}
 
 		mzph(this.player).resetVelocityX();
 		if (mzph().leftIsDown()) {
@@ -300,19 +352,18 @@ $(document).ready(function() {
 		//  No longer this.player.standing on the edge, but were
 		//  Give them a 250ms grace period to jump after falling
 		if (!this.player.standing && this.player.wasStanding) {
-			this.edgeTimer = mzph().getGameTimeTime() + 250;
+			this.edgeTimer = mzph().getGameTimeTime() + PLAYER_EDGE_JUMP_TIME_INTERVAL;
 		}
 
 		if (mzph().upIsDown()) {
 			//  Allowed to jump?
 			if ((this.player.standing || mzph().getGameTimeTime() <= this.edgeTimer) && this.jumpTimer < mzph().getGameTimeTime()) {
-				mzph(this.player).setVelocityY(JUMP_POWER.y);
-				this.jumpTimer = mzph().getGameTimeTime() + 750;
+				mzph(this.player).setVelocityY(PLAYER_JUMP_POWER.y);
+				this.jumpTimer = mzph().getGameTimeTime() + PLAYER_JUMP_TIME_INTERVAL;
 			}
 		}
 
 		this.player.wasStanding = this.player.standing;
-
 	};
 
 
@@ -340,7 +391,6 @@ $(document).ready(function() {
 	};
 
 	PhaserGame.prototype.playerHit = function(player) {
-		this.player.isAlive = false;
 		//mzph().cameraNotFollowAnything();
 
 		var posX = mzph(player).getBodyX();
@@ -357,6 +407,16 @@ $(document).ready(function() {
 		mzph(this.stateText).setVisible(true);
 		//the "click to restartPlayer" handler
 		game.input.onTap.addOnce(this.restartPlayer, this);
+	};
+
+	PhaserGame.prototype.playerDash = function() {
+		var playerShouldBeDashing = mzph().getGameTimeTime() < this.player.dash.remain;
+
+		if (playerShouldBeDashing) {
+			mzph(this.player).setVelocityY(PLAYER_DASH_VELOCITY.y);
+		} else {
+			this.player.dash.now = false;
+		}
 	};
 
 	PhaserGame.prototype.update = function() {
@@ -378,10 +438,16 @@ $(document).ready(function() {
 		mzph().arcadeCollide(this.player, this.platformGroup);
 
 		mzph().arcadeOverlap(this.player, this.littleYellowEnemyGroup, this.playerHit, null, this);
-		this.movePlayer();
+
+		if (this.player.dash.now) {
+			this.playerDash();
+		} else {
+			this.playerMove();
+		}
 
 		mzph().arcadeCollide(this.littleYellowEnemyGroup, this.platformGroup);
 		mzph().arcadeCollide(this.littleYellowEnemyGroup, this.invisibleEdgeGroup, this.enemyRebound);
+
 
 		if (this.updateCycle < 100) {
 			this.updateCycle++;
@@ -400,6 +466,8 @@ $(document).ready(function() {
 		this.invisibleEdgeGroup.forEach(function(edge) {
 			mzph().renderDebugBodyBounds(edge);
 		});
+
+
 	}
 
 
