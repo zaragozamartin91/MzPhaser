@@ -228,7 +228,7 @@ $(document).ready(function() {
 	};
 
 	PhaserGame.prototype.createGameStateText = function() {
-		var stateText = game.add.text(game.centerX, game.centerY, 'Presiona X para reiniciar ', {
+		var stateText = game.add.text(game.centerX, game.centerY, 'Click sobre la pantalla \npara reiniciar ', {
 			font: '50px Arial',
 			fill: '#fff'
 		});
@@ -236,7 +236,6 @@ $(document).ready(function() {
 		stateText.visible = false;
 		mzph(stateText).setFixedToCamera();
 		this.stateText = stateText;
-
 	};
 
 	PhaserGame.prototype.create = function() {
@@ -263,6 +262,11 @@ $(document).ready(function() {
 		mzph(this.player.dash.key).onKeyDownAddListener(this.triggerPlayerDash, this);
 	};
 
+	PhaserGame.prototype.playerReadyToDash = function() {
+		// si el tiempo de juego supera al timer limite de dash, se ejecuta la logica de dash...
+		return this.player.dash.timer < mzph().getGameTimeTime();
+	};
+
 	PhaserGame.prototype.triggerPlayerDash = function() {
 		// si el jugador esta dasheando, no se dispara el dash
 		if (this.player.dash.now) {
@@ -274,9 +278,7 @@ $(document).ready(function() {
 			return;
 		}
 
-		// si el tiempo de juego supera al timer limite de dash, se ejecuta la logica de dash...
-		var playerReadyToDash = this.player.dash.timer < mzph().getGameTimeTime();
-		if (playerReadyToDash) {
+		if (this.playerReadyToDash()) {
 			this.player.dash.now = true;
 
 			if (!this.player.standing) {
@@ -294,10 +296,19 @@ $(document).ready(function() {
 			}
 
 			this.player.dash.remain = mzph().getGameTimeTime() + PLAYER_DASH_TIME;
+			this.player.dash.timer = mzph().getGameTimeTime();
 		}
 	};
 
+	PhaserGame.prototype.playerReadyToJump = function() {
+		return (this.player.standing || mzph().getGameTimeTime() <= this.edgeTimer) && this.jumpTimer < mzph().getGameTimeTime();
+	};
+
 	PhaserGame.prototype.playerMove = function() {
+		if (!this.playerShouldMove()) {
+			return;
+		}
+
 		//  Do this AFTER the collide check, or we won't have blocked/touching set
 		this.player.standing = mzph(this.player).isStanding();
 		if (this.player.standing) {
@@ -357,7 +368,7 @@ $(document).ready(function() {
 
 		if (mzph().upIsDown()) {
 			//  Allowed to jump?
-			if ((this.player.standing || mzph().getGameTimeTime() <= this.edgeTimer) && this.jumpTimer < mzph().getGameTimeTime()) {
+			if (this.playerReadyToJump()) {
 				mzph(this.player).setVelocityY(PLAYER_JUMP_POWER.y);
 				this.jumpTimer = mzph().getGameTimeTime() + PLAYER_JUMP_TIME_INTERVAL;
 			}
@@ -390,11 +401,11 @@ $(document).ready(function() {
 		mzph(this.stateText).setInvisible();
 	};
 
-	PhaserGame.prototype.playerHit = function(player) {
+	PhaserGame.prototype.playerDies = function() {
 		//mzph().cameraNotFollowAnything();
 
-		var posX = mzph(player).getBodyX();
-		var posY = mzph(player).getBodyY();
+		var posX = mzph(this.player).getBodyX();
+		var posY = mzph(this.player).getBodyY();
 
 		mzph(this.dudeExplosion).reset(posX, posY);
 		mzph(this.dudeExplosion).playAnimation('explode', 30, false);
@@ -409,19 +420,27 @@ $(document).ready(function() {
 		game.input.onTap.addOnce(this.restartPlayer, this);
 	};
 
-	PhaserGame.prototype.playerDash = function() {
-		var playerShouldBeDashing = mzph().getGameTimeTime() < this.player.dash.remain;
+	PhaserGame.prototype.playerHit = function(player, enemy) {
+		this.playerDies();
+	};
 
-		if (playerShouldBeDashing) {
+	PhaserGame.prototype.playerShouldBeDashing = function() {
+		return this.player.dash.now && (mzph().getGameTimeTime() < this.player.dash.remain);
+	};
+
+	PhaserGame.prototype.playerDash = function() {
+		if (this.playerShouldBeDashing()) {
 			mzph(this.player).setVelocityY(PLAYER_DASH_VELOCITY.y);
 		} else {
 			this.player.dash.now = false;
 		}
 	};
 
-	PhaserGame.prototype.update = function() {
-		console.log("playerX:" + this.player.x + " gameX:" + game.world.x);
+	PhaserGame.prototype.playerShouldMove = function() {
+		return !this.player.dash.now;
+	};
 
+	PhaserGame.prototype.update = function() {
 		if (this.player.justRevived) {
 			this.updateCycle = 0;
 			this.player.justRevived = false;
@@ -431,23 +450,16 @@ $(document).ready(function() {
 		}
 
 		if (this.player.justRevived) {
-			console.log("JUST REVIVED playerX:" + this.player.x + " gameX:" + game.world.x);
 			this.player.justRevived = false;
 		}
 
 		mzph().arcadeCollide(this.player, this.platformGroup);
-
 		mzph().arcadeOverlap(this.player, this.littleYellowEnemyGroup, this.playerHit, null, this);
-
-		if (this.player.dash.now) {
-			this.playerDash();
-		} else {
-			this.playerMove();
-		}
-
 		mzph().arcadeCollide(this.littleYellowEnemyGroup, this.platformGroup);
 		mzph().arcadeCollide(this.littleYellowEnemyGroup, this.invisibleEdgeGroup, this.enemyRebound);
 
+		this.playerMove();
+		this.playerDash();
 
 		if (this.updateCycle < 100) {
 			this.updateCycle++;
@@ -461,13 +473,10 @@ $(document).ready(function() {
 		this.littleYellowEnemyGroup.forEach(function(enemy) {
 			mzph().renderDebugBodyBounds(enemy);
 		});
-		//game.debug.body(sprite2);
 
 		this.invisibleEdgeGroup.forEach(function(edge) {
 			mzph().renderDebugBodyBounds(edge);
 		});
-
-
 	}
 
 
