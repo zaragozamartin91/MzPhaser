@@ -274,26 +274,29 @@ $(document).ready(function() {
 
 	PhaserGame.prototype.triggerPlayerDash = function() {
 		// si el jugador esta dasheando, no se dispara el dash
-		var playerIsDashingNow = this.player.dash.now;
-		var playerIsMidair = !this.player.standing;
+		var playerDashingNow = this.player.dash.now;
+		var playerMidair = !mzph(this.player).isStanding();
+		var playerFacingLeft = this.player.facing === 'left';
+		var playerFacingRight = this.player.facing === 'right';
 
-		if (playerIsDashingNow) {
+		if (playerDashingNow) {
 			return;
 		}
 
 		if (this.playerReadyToDash()) {
 			this.player.dash.now = true;
 
-			if (playerIsMidair) {
+			if (playerMidair) {
 				this.player.dash.midAir = true;
+				this.player.dash.jumping = false;
 			}
 
-			if (this.player.facing === 'left') {
+			if (playerFacingLeft) {
 				mzph(this.player).playAnimation('dashLeft');
 				mzph(this.player).setVelocityX(-PLAYER_DASH_VELOCITY.x);
 			}
 
-			if (this.player.facing === 'right') {
+			if (playerFacingRight) {
 				mzph(this.player).playAnimation('dashRight');
 				mzph(this.player).setVelocityX(PLAYER_DASH_VELOCITY.x);
 			}
@@ -315,8 +318,6 @@ $(document).ready(function() {
 	};
 
 	PhaserGame.prototype.playerMove = function() {
-
-
 		this.player.standing = mzph(this.player).isStanding();
 		if (this.player.standing) {
 			this.player.dash.midAir = false;
@@ -387,10 +388,16 @@ $(document).ready(function() {
 			}
 		}
 
+		var playerStandingButWasNotStanding = this.player.standing && !this.player.wasStanding;
+		if(playerStandingButWasNotStanding){
+			this.killPlayerDash();
+			mzph(this.player).resetVelocityX();
+		}
+
 		//  No longer this.player.standing on the edge, but were
 		//  Give them a 250ms grace period to jump after falling
-		var playerIsNotStandingButWasStandingBefore = !this.player.standing && this.player.wasStanding;
-		if (playerIsNotStandingButWasStandingBefore) {
+		var playerNotStandingButWasStanding = !this.player.standing && this.player.wasStanding;
+		if (playerNotStandingButWasStanding) {
 			this.edgeTimer = mzph().getGameTimeTime() + PLAYER_EDGE_JUMP_TIME_INTERVAL;
 		}
 
@@ -454,15 +461,18 @@ $(document).ready(function() {
 	};
 
 	PhaserGame.prototype.playerShouldBeDashing = function() {
-		return this.player.dash.now && (mzph().getGameTimeTime() < this.player.dash.remain);
+		var playerIsDashing = this.player.dash.now;
+		var playerDahsedAndJumped = this.player.dash.jumping;
+		return playerIsDashing && (mzph().getGameTimeTime() < this.player.dash.remain || playerDahsedAndJumped);
 	};
 
 	PhaserGame.prototype.playerDash = function() {
 		var playerNotDashingWhileJumping = !this.player.dash.jumping;
 		var playerDashingMidair = this.player.dash.midAir;
 
+		console.log("this.playerShouldBeDashing(): " + this.playerShouldBeDashing());
 		if (this.playerShouldBeDashing()) {
-			if (playerNotDashingWhileJumping || playerDashingMidair) {
+			if ( /*playerNotDashingWhileJumping ||*/ playerDashingMidair) {
 				mzph(this.player).setVelocityY(0);
 			}
 		} else {
