@@ -1160,6 +1160,10 @@ MzPhaser.prototype.onKeyDownAddListener = function(listener, listenerContext, pr
 };
 
 
+MzPhaser.prototype.cursorsNotPressed = function() {
+	var anyPressed = leftIsDown() || rightIsDown() || upIsDown() || downIsDown();
+	return !anyPressed;
+};
 MzPhaser.prototype.leftIsDown = function() {
 	return MzPhaser.cursors.left.isDown;
 };
