@@ -323,22 +323,48 @@ $(document).ready(function() {
 			this.player.dash.jumping = false;
 		}
 
+		var playerIsMidair = !this.player.standing;
+		var playerDashing = this.player.dash.now;
 		var playerNotDashing = !this.player.dash.now;
 		var playerFacingLeft = this.player.facing === 'left';
 		var playerFacingRight = this.player.facing === 'right';
 		var playerDahsedAndJumped = this.player.dash.jumping;
 		var playerStillX = mzph(this.player).getVelocityX() === 0;
 
+		if (playerFacingLeft) {
+			if (playerNotDashing) {
+				if (playerIsMidair) {
+					mzph(this.player).playAnimation('jumpLeft');
+				} else {
+					if (playerStillX) {
+						mzph(this.player).playAnimation('idleLeft');
+					} else {
+						mzph(this.player).playAnimation('runLeft');
+					}
+				}
+			}
+		}
+
+		if (playerFacingRight) {
+			if (playerNotDashing) {
+				if (playerIsMidair) {
+					mzph(this.player).playAnimation('jumpRight');
+				} else {
+					if (playerStillX) {
+						mzph(this.player).playAnimation('idleRight');
+					} else {
+						mzph(this.player).playAnimation('runRight');
+					}
+				}
+			}
+		}
+
 		if (mzph().leftIsDown()) {
 			if (playerNotDashing || playerFacingRight) {
 				mzph(this.player).setVelocityX(-PLAYER_VELOCITY.x);
-				if (this.player.standing) {
-					mzph(this.player).playAnimation('runLeft');
-				} else {
-					mzph(this.player).playAnimation('jumpLeft');
-				}
 				this.player.facing = 'left';
 				this.killPlayerDash();
+
 			}
 
 			// con esto desplazamos el fondo de los arboles 
@@ -346,35 +372,18 @@ $(document).ready(function() {
 		} else if (mzph().rightIsDown()) {
 			if (playerNotDashing || playerFacingLeft) {
 				mzph(this.player).setVelocityX(PLAYER_VELOCITY.x);
-				if (this.player.standing) {
-					mzph(this.player).playAnimation('runRight');
-				} else {
-					mzph(this.player).playAnimation('jumpRight');
-				}
 				this.player.facing = 'right';
 				this.killPlayerDash();
 			}
+
 
 			// con esto desplazamos el fondo de los arboles 
 			mzph(this.trees).reduceTilePositionX(TILE_VELOCITY.x);
 		} else {
 			// if no cursor is being pressed
-
 			if (playerStillX || (playerNotDashing && !playerDahsedAndJumped)) {
 				mzph(this.player).resetVelocityX();
-				if (playerFacingLeft) {
-					if (this.player.standing) {
-						mzph(this.player).playAnimation('idleLeft');
-					} else {
-						mzph(this.player).playAnimation('jumpLeft');
-					}
-				} else {
-					if (this.player.standing) {
-						mzph(this.player).playAnimation('idleRight');
-					} else {
-						mzph(this.player).playAnimation('jumpRight');
-					}
-				}
+				if (playerFacingLeft) {} else {}
 			}
 		}
 
